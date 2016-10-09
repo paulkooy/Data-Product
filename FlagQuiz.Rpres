@@ -1,4 +1,4 @@
-FlagQuiz
+Flag Quiz
 ========================================================
 author: Paul van der Kooy
 date: 8 October 2016
@@ -18,8 +18,8 @@ Objectives
 
 The application includes the following:
 
-- Some form of input (widget: textbox, radio button, checkbox, ...)
-- Some operation on the ui input in sever.R
+- Some form of input (widget: text-box, radio button, check-box, ...)
+- Some operation on the UI input in server.R
 - Some reactive output displayed as a result of server calculations
 - Enough documentation so that a novice user could use your application.
 - Publish on Shiny website itself
@@ -28,14 +28,12 @@ The application includes the following:
 Data source
 ========================================================
 
-This application make use of the open country data information from http://www.geonames.org/. It utilizes the country index and the flag repository.
-Example:
-
+This application make use of the open country data information from http://www.geonames.org/. It utilizes the country index and the flag repository. Example:
 ```{r}
 library(png)
 library(RCurl)
 country <- "US"
-url <- paste0("http://www.geonames.org/flags/m/",tolower(as.character(country)),".png")
+url <- paste0("http://www.geonames.org/flags/m/",tolower(country),".png")
 img <- readPNG(getURLContent(url))
 plot.new()
 rasterImage(img,0,0,0.5,0.27)
