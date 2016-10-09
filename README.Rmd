@@ -1,8 +1,15 @@
-# README
-Paul van der Kooy  
-10/3/2016  
+---
+title: "README"
+author: "Paul van der Kooy"
+date: "10/3/2016"
+output: 
+  html_document: 
+    keep_md: yes
+---
 
-
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
 # National Flag test
 
 ## Data Product
@@ -24,25 +31,15 @@ Content:
 This application make use of the open country data information from <http://www.geonames.org/>. It utilizes the country index and the flag repository.  
 Example:
 
-
-```r
+```{r}
 library(png)
 library(RCurl)
-```
-
-```
-## Loading required package: bitops
-```
-
-```r
 country <- "US"
 url <- paste0("http://www.geonames.org/flags/m/",tolower(as.character(country)),".png")
 img <- readPNG(getURLContent(url))
 plot.new()
 rasterImage(img,0,0,0.25,0.25)
 ```
-
-![](README_files/figure-html/unnamed-chunk-1-1.png)<!-- -->
 
 ### Application manual
 

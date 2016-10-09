@@ -26,60 +26,77 @@ hard <- c(1:100)
 
 shinyServer(  
     function(input, output, session) {
+        #
+        #   Set variables to control the flow
+        #
+        val <- reactiveValues(j = 1, score = 0, src = " ", options = " ")
+        #
+        #   Initialise the dataset for the quiz questions
+        #
         output$text1 <- renderText({paste("Here are ",input$questions," ",input$difficulty," questions for you to answer.")})
-        countries <- reactive({
-                switch (input$difficulty,
-                easy = countryInfo[easy,],
-                hard = countryInfo[hard,],
-                extreme = countryInfo
-            )
-            sampleList <- sample(countries$iso.alpha2, 4*input$questions)
-            selection <- matrix(sampleList, input$questions, 4)
-            for(i in 1:as.numeric(input$questions)) {
-                answer[i] <- sample(selection[i], 1)
-            }
+        observeEvent(input$ok , {
+            countries <- reactive({
+                    switch (input$difficulty,
+                    easy = countryInfo[easy,],
+                    hard = countryInfo[hard,],
+                    extreme = countryInfo
+                )
+                set.seed(as.numeric(Sys.time()))
+                sampleList <- as.character(sample(countries$iso.alpha2, 4*input$questions))
+                selection <- matrix(sampleList, nrow = as.numeric(input$questions), ncol = 4)
+                for(i in 1:as.numeric(input$questions)) {
+                    answer[i] <- sample(selection[i,], 1)
+                }
+            })  #   end of reactive
+            isolate({cat("Number of questions:", input$questions, "Length:", length(selection), "\n")})
+            cat(as.matrix(selection),"\n")
+            cat("Dimension:", dim(selection),"\n")
+            cat(as.character(answer),"\n")
+            #
+            #   Reset question counter and score for a possible next round
+            #
+            val$j <- 1
+            val$score <- 0
+        })  #   end of OK observer
+        observeEvent(val$j, {
+            val$src <- paste0("http://www.geonames.org/flags/x/",tolower(as.character(answer[val$j])),".gif")
+            option1 <- countryInfo$name[countryInfo$iso.alpha2 == selection[val$j,1]]
+            option2 <- countryInfo$name[countryInfo$iso.alpha2 == selection[val$j,2]]
+            option3 <- countryInfo$name[countryInfo$iso.alpha2 == selection[val$j,3]]
+            option4 <- countryInfo$name[countryInfo$iso.alpha2 == selection[val$j,4]]
+            val$options <- c(as.character(option1[1]), as.character(option2[1]), as.character(option3[1]), as.character(option4[1]))
         })
-        j <- 1
-#        for(j in 1:as.numeric(input$questions)) {
+        #
+        #   plot the flag
+        #
         output$image <- renderUI({
-            tags$img(src = paste0("http://www.geonames.org/flags/x/",tolower(as.character(answer[j])),".gif"))
+            tags$img(src = val$src)
         })
+        #
+        #   Update the RadioButtons with a new answers to question
+        #
         observe({
             x <- input$reply
-            option1 <- countryInfo$name[countryInfo$iso.alpha2 == selection[j,1]]
-            option2 <- countryInfo$name[countryInfo$iso.alpha2 == selection[j,2]]
-            option3 <- countryInfo$name[countryInfo$iso.alpha2 == selection[j,3]]
-            option4 <- countryInfo$name[countryInfo$iso.alpha2 == selection[j,4]]
-            options <- c(as.character(option1[1]), as.character(option2[1]), as.character(option3[1]), as.character(option4[1]))
-            updateRadioButtons(session, 'reply', 'From which country is this flag ?', choices = options, selected = x)
+            updateRadioButtons(session, 'reply', 'From which country is this flag ?', choices = val$options, selected = x)
         })
-        observe({
-            input$submit
-            isolate({ 
-                # cat(as.character(countryInfo$name[countryInfo$iso.alpha2 == answer[j]][1]), "\n")
-                # cat(input$reply, "\n")
+        #
+        #   Wait until the user submits his answer
+        #
+        observeEvent(input$submit, {
+            output$catTest <- renderText({catText})
+            isolate({
                 if (length(input$reply)) { 
-                    if (as.character(countryInfo$name[countryInfo$iso.alpha2 == answer[j]][1]) == input$reply) {
-#                        j <- j + 1
-                        text <- paste("Radiobutton response", input$reply, "is good and j =",j,"\n" )
+                   if (as.character(countryInfo$name[countryInfo$iso.alpha2 == answer[val$j]][1]) == input$reply) {
+                        text <- paste("The answer", input$reply, "was correct.\n")
+                        val$score <- val$score + 1
                     } else {
-                        text <- paste("Radiobutton response", input$reply, "is wrong.\n" )
+                        text <- paste("The answer", input$reply, "was wrong.\n")
                     }
-                }
-                    else { text <- "Please select a country"}
-            })
+                } else { text <- "Please select a country"}
+            if (val$j < input$questions) {val$j <- val$j +1}
+            })  #   end of isolate
             output$text2 <- renderText({text})
-        })
-#        }
-        output$text3 <- renderText({"klaar"})
-    }
-#        
-#        output$myHist <- renderPlot({      
-#            hist(galton$child, xlab='child height', col='lightblue',main='Histogram')      
-#            mu <- input$mu      
-#            lines(c(mu, mu), c(0, 200),col="red",lwd=5)      
-#            mse <- mean((galton$child - mu)^2)      
-#            text(63, 150, paste("mu = ", mu))      
-#            text(63, 140, paste("MSE = ", round(mse, 2)))      
-#        })
-)
+        })   #   end of Submit observer
+        output$text3 <- renderText({paste("Your score is", min(val$score, input$questions), " out of", input$questions, "(", round(100*(min(val$score, input$questions))/input$questions), "%)\n")})
+    }   #   end of in/output function
+)   #   end of server

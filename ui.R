@@ -28,6 +28,7 @@ shinyUI(pageWithSidebar(
             radioButtons('reply', 'What country do you select ?', options, selected = NULL),
             actionButton('submit', label = "Submit"),
             br(),
+            textOutput('catText'),
             textOutput('text2'),
             textOutput('text3')
         )
