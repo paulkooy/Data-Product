@@ -16,6 +16,7 @@ library(dplyr)
 #
 #   Enable GeoNames web services and import the country information
 #
+geonamesUsername <- "paulkooy"
 url <- "http://api.geonames.org/countryInfoCSV?username=paulkooy&style=full"
 countryInfo <- read.delim(url, na.strings = c("","NA"), fill=FALSE)
 #   Filter out countries without name
@@ -29,42 +30,46 @@ shinyServer(
         #
         #   Set variables to control the flow
         #
-        val <- reactiveValues(j = 1, score = 0, src = " ", options = " ")
+        val <- reactiveValues(j = 0, score = 0, src = " ", options = " ", selection = matrix(c(1:4), nrow = 1, ncol = 4), answer = " ", reward = 0)
         #
         #   Initialise the dataset for the quiz questions
         #
         output$text1 <- renderText({paste("Here are ",input$questions," ",input$difficulty," questions for you to answer.")})
         observeEvent(input$ok , {
-            countries <- reactive({
-                    switch (input$difficulty,
-                    easy = countryInfo[easy,],
-                    hard = countryInfo[hard,],
-                    extreme = countryInfo
-                )
-                set.seed(as.numeric(Sys.time()))
-                sampleList <- as.character(sample(countries$iso.alpha2, 4*input$questions))
-                selection <- matrix(sampleList, nrow = as.numeric(input$questions), ncol = 4)
-                for(i in 1:as.numeric(input$questions)) {
-                    answer[i] <- sample(selection[i,], 1)
-                }
-            })  #   end of reactive
-            isolate({cat("Number of questions:", input$questions, "Length:", length(selection), "\n")})
-            cat(as.matrix(selection),"\n")
-            cat("Dimension:", dim(selection),"\n")
-            cat(as.character(answer),"\n")
+#            cat("input$ok observer entered\n")
+            countries <- switch(input$difficulty,
+                easy = countryInfo[easy,],
+                hard = countryInfo[hard,]
+            )
+            sampleList <- as.character(sample(countries$iso.alpha2, 4*as.numeric(input$questions)))
+            val$selection <- matrix(sampleList, nrow = as.numeric(input$questions), ncol = 4)
+            for(i in 1:as.numeric(input$questions)) {
+                val$answer[i] <- sample(val$selection[i,], 1)
+            }
+#            cat("Number of questions:", input$questions, "Length:", length(val$selection), "\n")
+#            cat(as.matrix(val$selection),"\n")
+#            cat("Dimension:", dim(val$selection),"\n")
+#            cat(as.character(val$answer),"\n")
             #
             #   Reset question counter and score for a possible next round
             #
             val$j <- 1
             val$score <- 0
+            val$reward <- 1
+#            cat("input$ok observer ready\n")
         })  #   end of OK observer
         observeEvent(val$j, {
-            val$src <- paste0("http://www.geonames.org/flags/x/",tolower(as.character(answer[val$j])),".gif")
-            option1 <- countryInfo$name[countryInfo$iso.alpha2 == selection[val$j,1]]
-            option2 <- countryInfo$name[countryInfo$iso.alpha2 == selection[val$j,2]]
-            option3 <- countryInfo$name[countryInfo$iso.alpha2 == selection[val$j,3]]
-            option4 <- countryInfo$name[countryInfo$iso.alpha2 == selection[val$j,4]]
+#            cat("val$j observer entered\n")
+            val$src <- paste0("http://www.geonames.org/flags/x/",tolower(as.character(val$answer[val$j])),".gif")
+            option1 <- countryInfo$name[countryInfo$iso.alpha2 == val$selection[val$j,1]]
+            option2 <- countryInfo$name[countryInfo$iso.alpha2 == val$selection[val$j,2]]
+            option3 <- countryInfo$name[countryInfo$iso.alpha2 == val$selection[val$j,3]]
+            option4 <- countryInfo$name[countryInfo$iso.alpha2 == val$selection[val$j,4]]
             val$options <- c(as.character(option1[1]), as.character(option2[1]), as.character(option3[1]), as.character(option4[1]))
+            # val$options <- c(as.character(countryInfo$name[countryInfo$iso.alpha2 == val$selection[val$j,1]][1]), as.character(countryInfo$name[countryInfo$iso.alpha2 == val$selection[val$j,2]][1]), as.character(countryInfo$name[countryInfo$iso.alpha2 == val$selection[val$j,3]][1]), as.character(countryInfo$name[countryInfo$iso.alpha2 == val$selection[val$j,4]][1]))
+#            cat("val$options:", val$options, "\n")
+#            cat("val$src:", val$src, "\n")
+#            cat("val$j observer ready\n")
         })
         #
         #   plot the flag
@@ -74,26 +79,29 @@ shinyServer(
         })
         #
         #   Update the RadioButtons with a new answers to question
+        #   (Only refresh the radio buttons after the labels have been calculated)
         #
-        observe({
+        observeEvent(val$options, {
             x <- input$reply
+#            cat("Button observer entered\n")
             updateRadioButtons(session, 'reply', 'From which country is this flag ?', choices = val$options, selected = x)
+#            cat("Button observer ready\n")
         })
         #
         #   Wait until the user submits his answer
         #
         observeEvent(input$submit, {
-            output$catTest <- renderText({catText})
             isolate({
                 if (length(input$reply)) { 
-                   if (as.character(countryInfo$name[countryInfo$iso.alpha2 == answer[val$j]][1]) == input$reply) {
-                        text <- paste("The answer", input$reply, "was correct.\n")
-                        val$score <- val$score + 1
+                   if (as.character(countryInfo$name[countryInfo$iso.alpha2 == val$answer[val$j]][1]) == input$reply) {
+                        val$score <- val$score + val$reward
+                        text <- paste("The answer", input$reply, "of question", val$j, "was correct.\n")
                     } else {
-                        text <- paste("The answer", input$reply, "was wrong.\n")
+                        text <- paste("The answer", input$reply, "of question", val$j, "was wrong.\n")
                     }
                 } else { text <- "Please select a country"}
-            if (val$j < input$questions) {val$j <- val$j +1}
+                if (val$j == input$questions) {val$reward <- 0}
+                if (val$j < input$questions) {val$j <- val$j +1}
             })  #   end of isolate
             output$text2 <- renderText({text})
         })   #   end of Submit observer

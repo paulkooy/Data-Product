@@ -9,7 +9,7 @@
 #   Load required libraries
 #
 library(shiny)
-choices <- c("Easy" = "easy", "Hard" = "hard", "Extreme" = "extreme")
+choices <- c("Easy" = "easy", "Hard" = "hard")
 options <- c(" ", "item 2", "item 3", "item 4")
 
 shinyUI(pageWithSidebar(  
@@ -28,7 +28,6 @@ shinyUI(pageWithSidebar(
             radioButtons('reply', 'What country do you select ?', options, selected = NULL),
             actionButton('submit', label = "Submit"),
             br(),
-            textOutput('catText'),
             textOutput('text2'),
             textOutput('text3')
         )
