@@ -27,8 +27,11 @@ Introduction & Objectives
 Data source
 ========================================================
 
-This application make use of the open country data information from http://www.geonames.org/. It utilizes the country index and the flag repository. Example:
-```{r}
+This application make use of the open country data information from http://www.geonames.org/. 
+It utilizes the country index and the flag repository. 
+
+Example:
+```{r, echo=FALSE}
 library(png)
 library(RCurl)
 country <- "US"
@@ -42,8 +45,13 @@ Application Manual
 ========================================================
 
 The application is straight forwards and self-explanatory. The user is asked to enter a number of questions he or she likes to answer and a level of difficulty. After confirmation the application presents a number of national flags, which the users has to identify by means of multiple choice questions.
+Finally, the score is maintained and presented back to the user. 
 
-Finally, the score is maintained and presented back to the user. See the screendump of the App
+***
+
+See the screendump of the App or try it yourself: 
+
+https://paulkooy.shinyapps.io/FlagQuiz/
 
 ```{r, echo=FALSE}
 library(png)
